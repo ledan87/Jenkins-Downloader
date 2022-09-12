@@ -1,6 +1,7 @@
 import zipfile
 import re
 from io import BytesIO
+import os.path
 from urllib.request import urlopen
 
 MANIFEST_CONTENT_PATTERN = re.compile("(?P<name>.+): (?P<content>.*)")
@@ -30,12 +31,22 @@ class Dependency:
         print(f"Downloading {self.name} {self.version}")
         return f"https://updates.jenkins.io/download/plugins/{self.name}/{self.version}/{self.name}.hpi"
 
+    def file_name(self):
+        return f"cache/{self.name}_{self.version}.hpi"
+
     def __str__(self):
         return f"{self.name}:{self.version}"
 
-def getManifest(url):
-    with urlopen(url) as response:
-        with zipfile.ZipFile(BytesIO(response.read())) as zip:
+def getManifest(dep):
+
+    file_name = dep.file_name()
+    if not os.path.exists(file_name):
+        url = dep.download_link()
+        with urlopen(url) as response:
+            open(file_name, "wb").write(response.read())
+
+    with open(file_name, "rb") as file:
+        with zipfile.ZipFile(file_name) as zip:
             return parse_manifest(zip.open("META-INF/MANIFEST.MF"))
 
 def getDependencies(manifest):
@@ -64,7 +75,7 @@ def getRecursiveDependenciesCached(dependencies, cache):
             del cache[dep]
 
         cache.append(dep)
-        manifest = getManifest(dep.download_link())
+        manifest = getManifest(dep)
         deps.append(dep)
         deps.extend(getRecursiveDependenciesCached(getDependencies(manifest), cache))
     return deps
@@ -72,7 +83,7 @@ def getRecursiveDependenciesCached(dependencies, cache):
 def getRecursiveDependencies(dependencies):
     deps = []
     for dep in dependencies:
-        manifest = getManifest(dep.download_link())
+        manifest = getManifest(dep)
         deps.append(dep)
         deps.extend(getRecursiveDependencies(getDependencies(manifest)))
     return deps
@@ -99,3 +110,8 @@ print(f"Highest Jenkins Version: {highest_jenkins_version}")
 #print latest dependencies with version and required jenkins version
 for dep in latest_deps.values():
     print(f"{dep.name}:{dep.version} (Jenkins Version: {dep.requiredJenkinsVersion})")
+
+with zipfile.ZipFile("jenkins-plugins.zip", "w") as zip:
+    for hpi in latest_deps.values():
+        #write hpi to zip with name from file_name
+        zip.write(hpi.file_name(), arcname = f"{hpi.name}.hpi")
