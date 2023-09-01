@@ -1,0 +1,65 @@
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.pylint.format]
+max-line-length = "88"
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+target-version = "py39"
+exclude = ["dat_parser.py", "formel_parser.py", "ser_parser.py"]
+select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes
+  "UP",  # pyupgrade
+  "B",   # bugbear
+  "Q",   # flake8-quotes
+  "I",   # isort
+  "N",   # pep8-naming
+  "RET", # flake8-return
+  "T20", # flake8-print
+  "C4",  # flake8-comprehensions
+  "PIE", # flake8-pie
+  "ISC", # flake8-implicit-str-concat
+  "PYI", # flake8-pyi
+  "SLF", # flake8-self
+  "SIM", # flake8-simplify
+  "ARG", # flake8-unused-arguments
+  "PTH", # flake8-use-pathlib
+  "ERA", # eradicate
+  "TRY", # tryceratops
+  "RUF", # ruff
+  "ANN", # flake8-annotations
+]
+ignore = [
+  "RET505", # Unnecessary {branch} after return statement
+  "RET506", # Unnecessary {branch} after raise statement
+  "RET507", # Unnecessary {branch} after continue statement
+  "RET508", # Unnecessary {branch} after break statement
+  "TRY003", # Too broad exception clause
+]
+
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+[tool.mypy]
+python_version = 3.9
+strict = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "puls_param.dat.dat_parser"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "puls_param.ser.ser_parser"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "puls_param.ser.formel_parser"
+ignore_errors = true
