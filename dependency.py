@@ -26,7 +26,6 @@ class Dependency:
         self.logger = logging.getLogger(__name__)
 
     def download_link(self: Dependency) -> str:
-        self.logger.info(f"Downloading {self.name} {self.version}")
         return (
             "https://updates.jenkins.io/download/plugins/"
             f"{self.name}/{self.version}/{self.name}.hpi"
@@ -66,6 +65,7 @@ def get_manifest(dep: Dependency) -> Any:
     file_name = dep.file_name()
     if not Path(file_name).exists():
         url = dep.download_link()
+        print(f"Downloading {dep.name} {dep.version}:{url}")  # noqa: T201
         with urlopen(url) as response, Path(file_name).open("wb") as f:
             f.write(response.read())
 
