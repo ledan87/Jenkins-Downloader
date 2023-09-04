@@ -1,4 +1,5 @@
 # ruff: noqa: T201
+from pathlib import Path
 import zipfile
 
 from dependency import Dependency, parse_version
@@ -64,8 +65,19 @@ for dep in dependencies:
 for dep in latest_deps.values():
     print(f"{dep.long_name}; {dep.version}")
 
-
-with zipfile.ZipFile("jenkins-plugins.zip", "w") as zip:
+current_size = 0
+zip_number = 1
+with zipfile.ZipFile(f"jenkins-plugins_{zip_number}.zip", "w") as zip:
     for hpi in latest_deps.values():
         # write hpi to zip with name from file_name
+        file_size = Path("cache/" + hpi.file_name).stat().st_size
+
+        print(f"{hpi.name}.hpi: {file_size} bytes")
+        if current_size + file_size > 100 * 1024 * 1024.0:
+            zip.close()
+            zip_number += 1
+            zip = zipfile.ZipFile(f"jenkins-plugins_{zip_number}.zip", "w")
+            current_size = 0
+
         zip.write("cache/" + hpi.file_name, arcname=f"{hpi.name}.hpi")
+        current_size += file_size
