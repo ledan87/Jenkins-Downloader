@@ -1,10 +1,13 @@
 # ruff: noqa: T201
-from pathlib import Path
 import zipfile
+from collections import defaultdict
+from pathlib import Path
 
 from dependency import Dependency, parse_version
 
-dependencies = [
+max_jenkins_version = parse_version("2.367")
+
+required_packages = [
     Dependency.create("git", "5.0.2"),  # git integration
     Dependency.create("msbuild", "1.30"),
     Dependency.create("mstest", "1.0.0"),
@@ -16,6 +19,8 @@ dependencies = [
     Dependency.create("xunit", "2.3.9"),  # xunit
     Dependency.create("powershell", "1.4"),
     Dependency.create("pipeline-stage-view", "2.33"),
+    Dependency.create("cloudbees-bitbucket-branch-source", "803.vd9c5e84c41fa_"),
+    Dependency.create("sonar", "2.15"),
     # from here we have some dependencies that have been present
     Dependency.create("workflow-aggregator", "590.v6a_d052e5a_a_b_5"),
     Dependency.create("jenkins-multijob-plugin", "1.31"),
@@ -30,35 +35,42 @@ dependencies = [
     Dependency.create("command-launcher", "84.v4a_97f2027398"),
 ]
 
+# load all dependencies
+all_deps_of_required_packages: defaultdict[str, list[Dependency]] = defaultdict(list)
+for d in required_packages:
+    for dep in d.all_dependencies:
+        all_deps_of_required_packages[dep.name].append(dep)
 
-# get latest version of each plugin
+
+def get_latest_version(list_of_deps: list[Dependency]) -> Dependency:
+    latest = list_of_deps[0]
+    for dep in list_of_deps:
+        if parse_version(dep.version) > parse_version(latest.version):
+            latest = dep
+    return latest
+
+
 latest_deps: dict[str, Dependency] = {}
-for d in dependencies:
-    for dep in [d, *d.all_dependencies]:
-        if dep.name not in latest_deps or parse_version(dep.version) > parse_version(
-            latest_deps[dep.name].version
-        ):
-            if dep.name in latest_deps:
-                print(  # noqa: T201
-                    f"Found new version of {dep.name}: {parse_version(dep.version)} "
-                    f"was {parse_version(latest_deps[dep.name].version)}"
-                )
-            latest_deps[dep.name] = dep
+latest_deps = {
+    name: get_latest_version(deps)
+    for name, deps in all_deps_of_required_packages.items()
+}
 
-# get highest jenkins version of all latest plugins
-highest_jenkins_version = parse_version("0")
+# get plugins that violate the jenkins version
+jenkins_requirement_missed = False
 for dep in latest_deps.values():
-    current_jenkins_version = parse_version(dep.required_jenkins_version)
-    if current_jenkins_version > highest_jenkins_version:
-        highest_jenkins_version = current_jenkins_version
+    if parse_version(dep.required_jenkins_version) > max_jenkins_version:
+        jenkins_requirement_missed = True
+        print(
+            f"{dep.long_name} violates max Jenkins version {dep.required_jenkins_version}"
+        )
+if jenkins_requirement_missed:
+    print(f"Some plugins violate the max Jenkins version {max_jenkins_version}")
+    raise SystemExit(1)
 
-# print highest jenkins version
-print(f"Highest Jenkins Version: {highest_jenkins_version}")
-
-
-for dep in dependencies:
+for dep in required_packages:
     print()
-    print("Dependencies of " + dep.name)  # noqa:
+    print("Dependencies of " + dep.name)
     dep.print_tree(latest_deps)
 
 # print latest dependencies with version and required jenkins version

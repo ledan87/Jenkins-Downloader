@@ -1,7 +1,7 @@
 {
     "python.linting.enabled": false,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "mikoz.black-py"
     },
     "python.formatting.provider": "none"
 }

@@ -36,12 +36,12 @@ class Dependency:
                 print(  # noqa: T201
                     f"Found a new version of {dep.name}: {version} was {dep.version}"
                 )
-                dep.version = version
-            return dep
-        else:
-            dep = cls(name, version)
-            __cached__[id] = dep
-            return dep
+            else:
+                return dep
+        
+        dep = cls(name, version)
+        __cached__[id] = dep
+        return dep
 
     @property
     def download_link(self: Dependency) -> str:
@@ -182,8 +182,9 @@ def parse_version(version_str: str) -> version.Version:
         # try to remove the last part of the version string
         # e.g. "590.v6a_d052e5a_a_b_5" -> "590"
         # e.g. "1.199.v3ce31253ed13" -> "1.199"
-        match = re.search(r"\D", version_str)
+        match = re.search(r"^\d+(.[\d-]+){0,2}", version_str)
         if match:
-            return version.parse(version_str[: match.start()])
+            return version.parse(match.group(0))
         else:
+            print(f"Could not parse version: {version_str}")  # noqa: T201
             raise
