@@ -38,6 +38,7 @@ required_packages = [
 # load all dependencies
 all_deps_of_required_packages: defaultdict[str, list[Dependency]] = defaultdict(list)
 for d in required_packages:
+    all_deps_of_required_packages[d.name].append(d)
     for dep in d.all_dependencies:
         all_deps_of_required_packages[dep.name].append(dep)
 
@@ -80,7 +81,7 @@ for dep in latest_deps.values():
 current_size = 0
 zip_number = 1
 with zipfile.ZipFile(f"jenkins-plugins_{zip_number}.zip", "w") as zip:
-    for hpi in latest_deps.values():
+    for hpi in sorted(latest_deps.values(), key=lambda x: x.name):
         # write hpi to zip with name from file_name
         file_size = Path("cache/" + hpi.file_name).stat().st_size
 
