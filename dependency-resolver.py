@@ -85,12 +85,12 @@ with zipfile.ZipFile(f"jenkins-plugins_{zip_number}.zip", "w") as zip:
         # write hpi to zip with name from file_name
         file_size = Path("cache/" + hpi.file_name).stat().st_size
 
-        print(f"{hpi.name}.hpi: {file_size} bytes")
         if current_size + file_size > 100 * 1024 * 1024.0:
             zip.close()
             zip_number += 1
             zip = zipfile.ZipFile(f"jenkins-plugins_{zip_number}.zip", "w")
             current_size = 0
 
-        zip.write("cache/" + hpi.file_name, arcname=f"{hpi.name}.hpi")
+        zip.write("cache/" + hpi.file_name, arcname=hpi.file_name)
+        print(hpi.file_name)
         current_size += file_size
